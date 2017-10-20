@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>audio visualizer 1</title>
+	</head>
+	<script type="text/javascript" src="lib/three.js" ></script>
+	<script type="text/javascript" src="js/world.js" ></script>
+	<body>
+	<style>
+		html,body{
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			background-color: white;
+		}
+	</style>
+		<script>
+			
+			var world,
+				sound,
+				balls;
+						
+			
+			
+			loadMusic(onComplete);
+			
+			
+			function loadMusic(onComplete) {
+				
+				sound = new THREE.Audio();
+				
+				var audioLoader = new THREE.AudioLoader();
+				
+				audioLoader.load('./assets/music.mp3',function(buffer) {
+					
+					sound.setBuffer( buffer );
+					
+					sound.setLoop(false);
+					
+					sound.setVolume(0.5);
+					
+				});
+				
+			}
+			
+			function onComplete() {
+				
+				initWorld();
+				
+				createScene();
+				
+				bindMusci();
+				
+			}
+			
+			function initWorld() {
+				
+				world = new World();
+				
+				world.init();
+				
+				world.removeAxis();
+				
+			}
+			
+			function createScene() {
+				
+				
+				
+				
+				
+				
+				
+				
+			}
+			
+			
+			
+			function animate() {
+				requestAnimationFrame(animate);
+				world.render();
+			}
+			
+			
+		</script>
+	</body>
+</html>
