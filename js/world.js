@@ -28,7 +28,6 @@ World.prototype = {
    		this.defaultCamera = new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,0.1,2000);
    		this.defaultCamera.name = 'defauldt camera';
    		this.defaultCamera.position.set(0,0,100);
-		this.defaultCamera.lookAt(new THREE.Vector3(0,0,0));
 		
         if(!scene) {
 			this.scene = this.defaultScene;
@@ -59,9 +58,9 @@ World.prototype = {
       		scope.camera.updateProjectionMatrix();
     	}
 	    
-		this.axisHelper = new THREE.AxisHelper(10);
-		this.scene.add(this.axisHelper);
-		var ambient = new THREE.AmbientLight( 0xffffff );
+		this.axesHelper = new THREE.AxesHelper(10);
+		this.scene.add(this.axesHelper);
+		var ambient = new THREE.AmbientLight( 0x444444 );
     	this.scene.add( ambient );
     
     },
@@ -70,8 +69,8 @@ World.prototype = {
 		this.renderer.render(this.scene,this.camera);
 	},
 	
-	removeAxis : function(){
-		this.scene.remove(this.axisHelper);
+	removeAxes : function(){
+		this.scene.remove(this.axesHelper);
 	},
 	
 	changeScene : function(scene,camera){

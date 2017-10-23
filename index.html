@@ -22,16 +22,21 @@
 			
 			var world,
 				sound,
-				balls;
+				analyser,
+				listener,
+				balls = [];
 						
-			
 			
 			loadMusic(onComplete);
 			
 			
 			function loadMusic(onComplete) {
 				
-				sound = new THREE.Audio();
+				listener = new THREE.AudioListener();
+				
+				sound = new THREE.Audio(listener);
+				
+				analyser = new THREE.AudioAnalyser(sound, 128);
 				
 				var audioLoader = new THREE.AudioLoader();
 				
@@ -43,7 +48,18 @@
 					
 					sound.setVolume(0.5);
 					
+					window.addEventListener('click',function() {
+						sound.play();
+					});
+					
+					window.addEventListener('touchstart',function() {
+						sound.play();
+					});
+					
+					onComplete();
+					
 				});
+				
 				
 			}
 			
@@ -53,7 +69,7 @@
 				
 				createScene();
 				
-				bindMusci();
+				animate();
 				
 			}
 			
@@ -63,25 +79,76 @@
 				
 				world.init();
 				
-				world.removeAxis();
+				world.removeAxes();
 				
 			}
 			
 			function createScene() {
 				
+				var gap = 8;
 				
+				for(var i = 0; i < 8; i++) {
+					
+					for(var j = 0; j < 8; j++) {
+						
+						var color = '#'+Math.random().toString(16).substr(-6);
+						
+						var ball = new THREE.Mesh(
+							new THREE.SphereGeometry(1,64,64),
+							new THREE.MeshPhongMaterial({color:color})
+						);
+						
+						balls.push(ball);
+						
+						ball.position.set(i * gap,j * gap,0);
+						
+						world.scene.add(ball);
+						
+					}
+					
+				}
 				
+				world.camera.position.set(28,28,130);
 				
+				var light = new THREE.DirectionalLight();
 				
+				light.position.set(2,0,1);
 				
-				
+				world.scene.add(light);
 				
 			}
 			
-			
+			function keepWithMuic() {
+				
+				var fdata = analyser.getFrequencyData();
+				
+				var afdata = analyser.getAverageFrequency();
+				
+				for(var i = 0; i < 64; i++) {
+					
+					var ratio = fdata[i]/80;
+					
+					var oriPos = balls[i].position;
+					
+					var r = Math.random() > 0.5 ? 1 : -1;
+					
+					if(ratio > 0) {
+						
+						balls[i].scale.set(ratio,ratio,ratio);
+						
+						//balls[i].position.set(oriPos.x + r * ratio/50, oriPos.y + r * ratio/50,0);
+					}
+						
+				}
+				
+				if(afdata > 0)
+					world.camera.position.z = 80 * afdata/100;
+				
+			}
 			
 			function animate() {
 				requestAnimationFrame(animate);
+				keepWithMuic();
 				world.render();
 			}
 			
