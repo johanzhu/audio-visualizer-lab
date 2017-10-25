@@ -147,7 +147,7 @@
 					
 					var per = xhr.loaded/xhr.total * 50;
 					console.log(per);
-					total1 = per;
+					if(per !== Infinity) total2 = per;
 					
 					var progress = total1 + total2;
 					
@@ -186,7 +186,7 @@
 					
 					var per = xhr.loaded/xhr.total * 50;
 					console.log(per);
-					total2 = per;
+					if(per !== Infinity) total2 = per;
 					
 					var progress = total1 + total2;
 					
