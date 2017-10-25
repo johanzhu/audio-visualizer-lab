@@ -19,6 +19,7 @@
 			padding: 0;
 			overflow: hidden;
 			background-color: #FF837C;
+			font-family: -apple-system, BlinkMacSystemFont, "PingFang SC","Helvetica Neue",STHeiti,"Microsoft Yahei",Tahoma,Simsun,sans-serif;
 		}
 		
 		#play{
@@ -31,7 +32,6 @@
 			z-index: 999;
 			border: 2px solid black;
 			font-size: 30px;
-			font-family: "Microsoft YaHei";
 			width: 100px;
 			height: 50px;
 			text-align: center;
@@ -48,7 +48,6 @@
 			margin-top: -25px;
 			z-index: 999;
 			font-size: 30px;
-			font-family: "Microsoft YaHei";
 			width: 100px;
 			height: 50px;
 			text-align: center;
@@ -63,7 +62,6 @@
 			margin-top: 30px;
 			z-index: 999;
 			font-size: 30px;
-			font-family: "Microsoft YaHei";
 			width: 0px;
 			height: 20px;
 			text-align: center;
@@ -405,7 +403,7 @@
 				
 				var avdata = analyser.getAverageFrequency();
 				
-				var scale = (avdata - 30) / 35;
+				var scale = (avdata - 50) / 35;
 				
 				if(avdata > 0) {
 					if(scale < 1) scale = 1;
