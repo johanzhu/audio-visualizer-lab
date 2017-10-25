@@ -7,7 +7,10 @@
 	</head>
 	<script type="text/javascript" src="lib/three.js" ></script>
 	<script type="text/javascript" src="js/world.js" ></script>
-	<body>
+	<script type="text/javascript" src="lib/bas.js" ></script>
+	<script type="text/javascript" src="lib/orbitcontrol.js" ></script>
+	<script type="text/javascript" src="lib/TweenMax.min.js" ></script>
+	<script type="text/javascript" src="js/basplanet.js" ></script>
 	<style>
 		html,body{
 			width: 100%;
@@ -15,20 +18,148 @@
 			margin: 0;
 			padding: 0;
 			overflow: hidden;
-			background-color: white;
+			background-color: #FF837C;
 		}
+		
+		#play{
+			position: absolute;
+			display: none;
+			left: 50%;
+			top: 50%;
+			margin-left: -50px;
+			margin-top: -25px;
+			z-index: 999;
+			border: 2px solid black;
+			font-size: 30px;
+			font-family: "微软雅黑";
+			width: 100px;
+			height: 50px;
+			text-align: center;
+			line-height: 50px;
+			cursor: pointer;
+			background-color: #FF837C;
+		}
+		
+		#loading{
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -50px;
+			margin-top: -25px;
+			z-index: 999;
+			font-size: 30px;
+			font-family: "微软雅黑";
+			width: 100px;
+			height: 50px;
+			text-align: center;
+			line-height: 50px;
+			cursor: pointer;
+		}
+		#loadingBar{
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -60px;
+			margin-top: 30px;
+			z-index: 999;
+			font-size: 30px;
+			font-family: "微软雅黑";
+			width: 0px;
+			height: 20px;
+			text-align: center;
+			line-height: 50px;
+			background-color: #A42535;
+		}
+		
 	</style>
+	<body>
+		<div id="play">Play</div>
+		<div id="loading">Loading...</div>
+		<div id="loadingBar"></div>
 		<script>
+			
+			debug = false;
 			
 			var world,
 				sound,
 				analyser,
-				listener,
-				balls = [];
+				listener;
+			
+			var halo,
+				basPlanet,
+				particles = [],
+				bcParticles = [];
+				
+			var raby,
+				mixer,
+				clock = new THREE.Clock();
+				
+			var eventEmitter = new THREE.EventDispatcher();
+			
+			var total1 = 0;
+			var total2 = 0;
+			var assetsNum = 2;
+			var isPlay = false;
+			
+			var playBtn = document.getElementById('play');
+			var loadingBar = document.getElementById('loadingBar');
 						
+			var colorsBright = ['#a3b509', '#79b68a', '#f4da7e', '#ff8f4e', '#9d797d', '#b91b2a', '#b4885c', '#dd6316', '#d9c4b4'];
+  			var colorsDark = ['#000000','#190502', '#1c1005','#23190d', '#380008', '#131913', '#28120a', '#551705', '#471b01'];
+  			
+  			
+			loadAssets();
 			
-			loadMusic(onComplete);
+			function loadAssets() {
+				
+				eventEmitter.addEventListener('loaded',function(e) {
+					
+					if(assetsNum == 1) 
+						onComplete();
+					else
+						assetsNum -= e.message;
+					
+				});
+				
+				loadModel();
+				
+				loadMusic();
+				
+			}
 			
+			function loadModel() {
+				
+				var jsonLoader = new THREE.JSONLoader();
+				
+				jsonLoader.load('./assets/raby.json',function(geo,mats) {
+					
+					raby = new THREE.SkinnedMesh(geo,mats[0]);
+					
+					raby.material.skinning = true;
+					
+					mixer = new THREE.AnimationMixer(raby);
+					
+					var dance = mixer.clipAction( geo.animations[1] ).play();
+					
+					eventEmitter.dispatchEvent({type:'loaded',message:1});
+					
+				},onProgress);
+				
+				function onProgress(xhr) {
+					
+					var per = xhr.loaded/xhr.total * 50;
+					console.log(per);
+					total1 = per;
+					
+					var progress = total1 + total2;
+					
+					var w = 150 * progress * 0.01;
+					
+					loadingBar.style.width = w + 'px';
+					
+				}
+				
+			}
 			
 			function loadMusic(onComplete) {
 				
@@ -46,20 +177,27 @@
 					
 					sound.setLoop(false);
 					
-					sound.setVolume(0.5);
+					sound.setVolume(1);
 					
-					window.addEventListener('click',function() {
-						sound.play();
-					});
+					eventEmitter.dispatchEvent({type:'loaded',message:1});
 					
-					window.addEventListener('touchstart',function() {
-						sound.play();
-					});
-					
-					onComplete();
-					
-				});
+				},onProgress);
 				
+				
+				function onProgress(xhr) {
+					
+					var per = xhr.loaded/xhr.total * 50;
+					console.log(per);
+					total2 = per;
+					
+					var progress = total1 + total2;
+					
+					var w = 150 * progress * 0.01;
+					
+					loadingBar.style.width = w + 'px';
+					
+					
+				}
 				
 			}
 			
@@ -75,80 +213,289 @@
 			
 			function initWorld() {
 				
+				document.getElementById('loading').style.display = 'none';
+				
+				document.getElementById('loadingBar').style.display = 'none';
+				
+				playBtn.style.display = 'block';
+				
 				world = new World();
 				
 				world.init();
 				
 				world.removeAxes();
 				
+				debug && new THREE.OrbitControls(world.camera);
+				
 			}
 			
 			function createScene() {
 				
-				var gap = 8;
+				addLight();
 				
-				for(var i = 0; i < 8; i++) {
+				createPlanetAndHalo();
+				
+				createBcAni();
+				
+				createDancer();
+				
+			}
+			
+			function addLight() {
+				
+				var light = new THREE.DirectionalLight(0xffffff, .5);
+				light.position.set(-20, 0, 20);
+				world.scene.add(light);
+				  
+				var backLight = new THREE.DirectionalLight(0xffffff, 0.1);
+				backLight.position.set(0, 0, -20);
+				world.scene.add(backLight);
+				
+				var shadowLight = new THREE.DirectionalLight(0xffffff,1.5);
+				shadowLight.position.set(30, 0, 10);
+				shadowLight.castShadow = true;
+				world.scene.add(shadowLight);
+				
+			}
+			
+			function createPlanetAndHalo() {
+				
+				createPlanet();
+				
+				createHalo();
+				
+			}
+			
+			
+			function createPlanet() {
+				
+				basPlanet = new BasPlanet();
+				
+				world.scene.add(basPlanet);
+				
+				playBtn.onclick = function() {
 					
-					for(var j = 0; j < 8; j++) {
-						
-						var color = '#'+Math.random().toString(16).substr(-6);
-						
-						var ball = new THREE.Mesh(
-							new THREE.SphereGeometry(1,64,64),
-							new THREE.MeshPhongMaterial({color:color})
-						);
-						
-						balls.push(ball);
-						
-						ball.position.set(i * gap,j * gap,0);
-						
-						world.scene.add(ball);
-						
-					}
+					TweenMax.to(basPlanet,1,{time:basPlanet.totalDuration - 1.2,repeat:0,ease:Power1.easeOut,delay:13});
+					
+					playBtn.style.display = 'none';
+					
+					sound.play();
+					
+					isPlay = true;
 					
 				}
 				
-				world.camera.position.set(28,28,130);
+			}
+			
+			function createHalo() {
 				
-				var light = new THREE.DirectionalLight();
+				var num = 64;
 				
-				light.position.set(2,0,1);
+				var r = 30;
 				
-				world.scene.add(light);
+				halo = new THREE.Object3D();
+				
+				for(var i = 0; i < num; i++) {
+					
+					var deg = Math.PI * 2 * i / num;
+					
+					deg = 0.9 * deg + Math.random() * 0.2 *deg;
+					
+					var colorIndex = Math.floor(Math.random() * 8);
+					
+					var size = Math.random()  + 1;
+					
+					var particle = new THREE.Mesh(
+						new THREE.TetrahedronGeometry(size, 0),
+						new THREE.MeshLambertMaterial({color: colorsBright[colorIndex], shading: THREE.FlatShading})
+					)
+					
+					particle.rotation.x = Math.PI/4 * Math.random();
+					particle.rotation.y = Math.PI/4 * Math.random();
+					particle.rotation.z = Math.PI/4 * Math.random();
+					
+					var posX = r * Math.sin(deg);
+					var posZ = r * Math.cos(deg);
+					posX = posX + 0.8 * posX * Math.random();
+					posZ = posZ + 0.8 * posZ * Math.random();
+					var posY = size;
+					
+					particle.position.set(posX,posY,posZ);
+					particle.name = i;
+					particle.scale.set(2* Math.random(),2* Math.random(),2* Math.random());
+					
+					halo.rotation.x = Math.PI/6;
+					
+					particles.push(particle);
+					halo.add(particle);
+					
+				}
+				
+				world.scene.add(halo);
+				
+				particleAni();
 				
 			}
+			
+			function createBcAni() {
+				
+				var bcNum = 100;
+				
+				var rangX = 500;
+				
+				for(var i = 0; i < bcNum; i++) {
+					
+					var posX = -rangX/2 + rangX/bcNum * i;
+					
+					var colorIndex = Math.floor(Math.random() * 8);
+					
+					var size = Math.random()  + 1;
+					
+					var particle = new THREE.Mesh(
+						new THREE.TetrahedronGeometry(size, 0),
+						new THREE.MeshLambertMaterial({color: colorsBright[colorIndex], shading:THREE.FlatShading})
+					)
+					
+					var posY = -150;
+					
+					var posZ = -150;
+					
+					particle.position.set(posX,posY,posZ);
+					
+					var duration = Math.random() * 5 + 5;
+					
+					var delay = Math.random() * 5;
+					
+					TweenMax.to(particle.position, duration, { y : 150, delay: delay,repeat: -1, ease: Linear.easeNone, onComplete:function() {
+						
+						duration = Math.random() * 5 + 5;
+						delay = Math.random() * 5;
+						
+					}});
+					
+					TweenMax.to(particle.rotation, duration, { x : 4*Math.PI, y : 4*Math.PI, z : 4*Math.PI, delay: delay,repeat: -1, ease: Linear.easeNone, onComplete:function() {
+						
+						duration = duration;
+						delay = delay;
+						
+					}});
+					
+					bcParticles.push(particle);
+					
+					world.scene.add(particle);
+					
+				}
+				
+			}
+			
+			function createDancer() {
+				
+				raby.scale.set(50,50,50);
+				
+				raby.position.y = -5;
+				
+				world.scene.add(raby);
+				
+			}
+			
 			
 			function keepWithMuic() {
 				
 				var fdata = analyser.getFrequencyData();
 				
-				var afdata = analyser.getAverageFrequency();
+				var avdata = analyser.getAverageFrequency();
+				
+				var scale = (avdata - 30) / 35;
+				
+				if(avdata > 0) {
+					if(scale < 1) scale = 1;
+					halo.scale.set(scale,scale,scale);
+				}
 				
 				for(var i = 0; i < 64; i++) {
 					
-					var ratio = fdata[i]/80;
+					var particle = particles[i];
 					
-					var oriPos = balls[i].position;
+					var data = fdata[i] / 100;
 					
-					var r = Math.random() > 0.5 ? 1 : -1;
-					
-					if(ratio > 0) {
+					if(avdata > 0) {
 						
-						balls[i].scale.set(ratio,ratio,ratio);
+						if(data < 1) data = 1;
 						
-						//balls[i].position.set(oriPos.x + r * ratio/50, oriPos.y + r * ratio/50,0);
+						particle.scale.set(data,data,data);
+						
 					}
-						
+					
 				}
 				
-				if(afdata > 0)
-					world.camera.position.z = 80 * afdata/100;
+				var bcIndex = new Array(10);
+				
+				
+				
+				
+				
+			}
+			
+			function particleAni() {
+				
+				for(var i = 0; i < particles.length; i++) {
+					
+					var particle = particles[i];
+					
+					var duration = Math.random() * 2 + 2.5;
+					
+					var posY = -5 + 10 * Math.random();
+					
+					TweenMax.to(particle.position, 2, { y : posY, repeat: -1, ease: Power1.easeOut, yoyo : true});
+					
+				}
+				
+			}
+			
+			function objectUpdate() {
+				
+				halo.rotation.y += Math.PI/200;
+				
+				basPlanet.rotation.y -= Math.PI/400;
+				
+				particles.forEach(function(particle) {
+					
+					particle.rotation.x += Math.PI/200 * Math.random();
+					particle.rotation.y += Math.PI/200 * Math.random();
+					particle.rotation.z += Math.PI/200 * Math.random();
+					
+				});
+				
+				if(mixer) mixer.update(1.35*clock.getDelta());
+				
+			}
+			
+			function detectMusicEnd() {
+				
+				var isPlaying = sound.isPlaying ? true : false;
+				
+				if(!isPlaying) {
+					
+					isPlay = false;
+				
+					playBtn.style.display = 'block';
+					
+					TweenMax.to(basPlanet, 2, { time : 0 });
+					
+				}
 				
 			}
 			
 			function animate() {
+				
 				requestAnimationFrame(animate);
+				
+				objectUpdate();
+				
 				keepWithMuic();
+				
+				if(isPlay) detectMusicEnd();
+				
 				world.render();
 			}
 			
