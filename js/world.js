@@ -40,7 +40,7 @@ World.prototype = {
 			this.camera = camera;
 		}
 		
-		this.renderer = new THREE.WebGLRenderer({alpha:true,antialias:true});
+		this.renderer = new THREE.WebGLRenderer({alpha:true,antialias:false});
 		this.renderer.setSize(window.innerWidth,window.innerHeight);
 		this.renderer.setPixelRatio(1.5);
 		this.renderer.shadowMap.enabled = true;
@@ -48,16 +48,6 @@ World.prototype = {
 		var container =  document.getElementById('world');
 		container.appendChild(this.renderer.domElement);
 	
-		window.addEventListener('resize',onWindowResize,false);
-	
-		function onWindowResize(){
-      		var WIDTH=window.innerWidth;
-      		var HEIGHT=window.innerHeight;
-      		scope.renderer.setSize(WIDTH, HEIGHT);
-      		scope.camera.aspect = WIDTH / HEIGHT;
-      		scope.camera.updateProjectionMatrix();
-    	}
-	    
 		this.axesHelper = new THREE.AxisHelper(10);
 		this.scene.add(this.axesHelper);
 		var ambient = new THREE.AmbientLight( 0x444444 );
