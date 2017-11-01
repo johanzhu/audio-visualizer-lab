@@ -3,3 +3,4 @@
 
 audio1 https://johanzhu.github.io/audio-visualizer-lab/ </br>
 audio2 https://johanzhu.github.io/audio-2/ </br>
+audio3 https://johanzhu.github.io/audio-3/ </br>
